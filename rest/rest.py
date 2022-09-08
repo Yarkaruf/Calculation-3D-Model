@@ -55,31 +55,40 @@ def orders_db_init():
 def get_value_by_key(db_name,key,value):
     conn=sqlite3.connect(db_name+".db")
     cur=conn.cursor()
-    cur.execute("SELECT * FROM "+db_name+" WHERE "+key+" = "+value+" ;")
+    cur.execute("SELECT * FROM "+db_name+" WHERE "+key+" = "+"'"+value+"'"+" ;")
+    result = cur.fetchall()
     conn.commit()
     cur.close()
     conn.close()
-    return cur.fetchall()
+    return result
 
 def get_value(db_name):
     conn=sqlite3.connect(db_name+".db")
     cur=conn.cursor()
     cur.execute("SELECT * FROM "+db_name+" ;")
+    result = cur.fetchall()
     conn.commit()
     cur.close()
     conn.close()
-    return cur.fetchall()      
+    return result
 
 
 def push_element(db_name,lines):
+  
     conn=sqlite3.connect(db_name+".db")
     cur=conn.cursor()
-    keys=", ".join(lines.keys())
-    lines=", ".join(lines.values())
-    for i in lines:
-        new_lines.append("'"+i+"'")
     
-    request="INSERT INTO "+db_name+"("+keys+") VALUES( "+new_lines+" );"
+    
+    values=[]
+    
+    for i in lines:
+      values.append("'"+lines[i]+"'")
+      
+    values=", ".join(values)
+    #keys=", ".join(lines.keys())
+    
+    #request="INSERT INTO "+db_name+"("+keys+") VALUES( "+values+" );"
+    request="INSERT INTO "+db_name+" VALUES( "+values+" );"
     try:
         cur.execute(request,lines)
     except sqlite3.IntegrityError:
@@ -105,16 +114,6 @@ class materials(Resource):
         
         return get_value_by_key("materials","name",id)
     
-    def post(self,id):
-        # lines = json from post request { "line_name" : line_value , "line_name" : line_value...... }
-        lines = request.get_json()
-        # keys=", ".join(lines.keys())
-        # lines=", ".join(lines.values())
-        # db_name="materials"
-        # temp="INSERT INTO "+db_name+"("+keys+") VALUES( "+lines+" );"
-        push_element("materials",lines)
-        return {"test":temp}
-    
     def patch(self,id):
         #pars values from json { "key_param" : key_param , "key_value" : key_value , "update_param" : update_param , "new_value" : new_value 
         
@@ -125,12 +124,6 @@ class users(Resource):
     def get(self,id):
         
         return get_value_by_key("users","login",id)
-    
-    def post(self,id):
-        #lines = json from post request { "line_name" : line_value , "line_name" : line_value...... }
-        new_x = request.get_json()
-        return {new_x}
-        #return push_element("users",lines)
     
     def patch(self,id):
         #pars values from json { "key_param" : key_param , "key_value" : key_value , "update_param" : update_param , "new_value" : new_value }
@@ -143,46 +136,53 @@ class orders(Resource):
         
         return get_value_by_key("orders","name",id)
     
-    def post(self,id):
-        #lines = json from post request { "line_name" : line_value , "line_name" : line_value...... }
-        
-        return push_element("orders",lines)
-    
     def patch(self,id):
         #pars values from json { "key_param" : key_param , "key_value" : key_value , "update_param" : update_param , "new_value" : new_value 
         
         return update_element("orders",key_param,key_value,update_param,new_value)
     
-class get_all(Resource):
+class all_db(Resource):
       
     def get(self,db_name):
         
         return get_value(db_name)
+      
+    def post(self,db_name):
+        # lines = json from post request { "line_name" : line_value , "line_name" : line_value...... }
+        
+        # example curl -X POST -H "Content-Type: application/json" -d "{ \"name\": \"test1\", \"price\": \"1\", \"weight\": \"1\" }" http://localhost:5000/
+        
+        lines = request.get_json()
+        push_element(db_name,lines)
   
 class get_file(Resource):
     def post(self):
         #example curl -X POST -H "Content-Type: multipart/form-data" -F "file=@test.stl" http://127.0.0.1:5000/analyze
-        parse = reqparse.RequestParser()
-        parse.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
-        args = parse.parse_args()
-        file = args['file']
-        file.save("files/"+file.filename)
-        return {"volume":analyze_3d_file("files/"+file.filename)}
+        if 'file' in request.files:
+          file = request.files['file']
+          # parse = reqparse.RequestParser()
+          # parse.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
+          # args = parse.parse_args()
+          # file = args['file']
+          file.save("files/"+file.filename)
+          return {"volume":analyze_3d_file("files/"+file.filename)}
          
 def main():
-    app = Flask(__name__)
-    api = Api(app)
+  
     materials_db_init()
     users_db_init()
     orders_db_init()
+    
+    app = Flask(__name__)
+    api = Api(app)
+    
     api.add_resource(materials, '/materials/<string:id>')
     api.add_resource(users, '/users/<string:id>')
     api.add_resource(orders, '/orders/<string:id>')
-    api.add_resource(get_all, '/<string:db_name>')
+    api.add_resource(all_db, '/<string:db_name>')
     api.add_resource(get_file, '/analyze')
     
     app.run()
-    
 main()
     
 
