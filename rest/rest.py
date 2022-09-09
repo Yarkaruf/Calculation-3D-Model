@@ -165,7 +165,7 @@ class get_file(Resource):
           # args = parse.parse_args()
           # file = args['file']
           file.save("files/"+file.filename)
-          return {"volume":analyze_3d_file("files/"+file.filename)}
+          #return {"volume":analyze_3d_file("files/"+file.filename)}
          
 def main():
   
