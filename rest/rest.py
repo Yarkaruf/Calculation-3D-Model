@@ -166,7 +166,7 @@ def main():
     api.add_resource(get_file, '/analyze')
     api.add_resource(single_element, '/<string:db_name>/<string:id>')
     
-    app.run()
+    app.run(host='0.0.0.0', port=5000)
 main()
     
 
