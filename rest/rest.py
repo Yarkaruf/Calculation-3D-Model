@@ -3,6 +3,7 @@ from flask_restful import Resource, Api, reqparse, request
 import sqlite3
 from stl import mesh
 import werkzeug
+from flask_cors import CORS
 
 def convert_into_binary(file_path):
   with open(file_path, 'rb') as file:
@@ -144,10 +145,6 @@ class get_file(Resource):
         #example curl -X POST -H "Content-Type: multipart/form-data" -F "file=@test.stl" http://127.0.0.1:5000/analyze
         if 'file' in request.files:
           file = request.files['file']
-          # parse = reqparse.RequestParser()
-          # parse.add_argument('file', type=werkzeug.datastructures.FileStorage, location='files')
-          # args = parse.parse_args()
-          # file = args['file']
           file.save("files/"+file.filename)
           return {"volume":analyze_3d_file("files/"+file.filename)}
          
@@ -158,6 +155,7 @@ def main():
     orders_db_init()
     
     app = Flask(__name__)
+    
     
     cors = CORS(app)
     app.config['CORS_HEADERS'] = 'Content-Type'
