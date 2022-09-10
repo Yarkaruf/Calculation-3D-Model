@@ -158,6 +158,10 @@ def main():
     orders_db_init()
     
     app = Flask(__name__)
+    
+    cors = CORS(app)
+    app.config['CORS_HEADERS'] = 'Content-Type'
+    
     api = Api(app)
     
     api.add_resource(all_db, '/<string:db_name>')
